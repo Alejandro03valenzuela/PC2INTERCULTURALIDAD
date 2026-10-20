@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Revista Digital · Perú Plural · UPSJB</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ================== RESET ================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --rojo: #c1121f;
+  --rojo-oscuro: #780000;
+  --azul: #1d3557;
+  --verde: #2a6f4e;
+  --dorado: #f4c430;
+  --crema: #fdf6e3;
+  --blanco: #ffffff;
+  --texto: #2c2c2c;
+  --gris: #666;
+  --sombra-libro: 0 25px 70px rgba(0,0,0,0.45), 0 8px 20px rgba(0,0,0,0.25);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: var(--texto);
+  background: #1a0f0a;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ================== BARRA DE PROGRESO ================== */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 4px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--dorado), var(--rojo));
+  z-index: 300;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 0 12px rgba(244,196,48,0.7);
+}
+
+/* ================== PISTA INICIAL ================== */
+.hint {
+  position: fixed;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.75);
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  padding: 8px 22px;
+  border-radius: 50px;
+  z-index: 150;
+  transition: opacity 0.6s;
+  animation: pulse 2.5s infinite;
+  white-space: nowrap;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+@keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+/* ================== ESCENARIO 3D ================== */
+.magazine {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: 
+    radial-gradient(ellipse at 20% 20%, #4a2c1a 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, #3a1c0a 0%, transparent 50%),
+    linear-gradient(135deg, #1a0f0a 0%, #2c1810 100%);
+}
+
+.magazine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    repeating-linear-gradient(45deg, transparent 0, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px);
+  pointer-events: none;
+}
+
+.page-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 2500px;
+  perspective-origin: center center;
+}
+
+/* ================== PÁGINA ================== */
+.page {
+  position: absolute;
+  width: min(940px, 94vw);
+  height: min(90vh, 720px);
+  background: var(--crema);
+  border-radius: 6px;
+  box-shadow: var(--sombra-libro);
+  padding: 35px 45px 45px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1),
+              opacity 0.9s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.page::-webkit-scrollbar { width: 0; }
+.page { scrollbar-width: none; }
+
+/* Estado: pasado (girado a la izquierda) */
+.page.past {
+  transform: rotateY(-180deg);
+  opacity: 0;
+  pointer-events: none;
+}
+/* Estado: futuro (girado a la derecha) */
+.page.future {
+  transform: rotateY(180deg);
+  opacity: 0;
+  pointer-events: none;
+}
+/* Estado: actual (visible) */
+.page.current {
+  transform: rotateY(0deg);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+/* Decoración sutil en cada página */
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 10% 15%, rgba(193,18,31,0.05), transparent 40%),
+    radial-gradient(circle at 90% 85%, rgba(29,53,87,0.05), transparent 40%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Lomo del libro */
+.page::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 25px;
+  background: linear-gradient(to right, rgba(0,0,0,0.12), transparent);
+  pointer-events: none;
+  border-radius: 6px 0 0 6px;
+}
+
+/* Número de página */
+.page-num {
+  position: absolute;
+  bottom: 15px;
+  right: 25px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: var(--gris);
+  letter-spacing: 3px;
+  z-index: 5;
+  opacity: 0.7;
+}
+
+/* ================== TIPOGRAFÍA ================== */
+.page h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  color: var(--rojo-oscuro);
+  line-height: 1.1;
+  margin-bottom: 0.7rem;
+  position: relative;
+  z-index: 2;
+}
+
+.page h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.3rem, 2.6vw, 1.9rem);
+  color: var(--azul);
+  margin-bottom: 0.6rem;
+  position: relative;
+  z-index: 2;
+}
+
+.page h3 {
+  font-size: 1rem;
+  color: var(--rojo);
+  margin: 0.8rem 0 0.4rem;
+  font-weight: 800;
+  position: relative;
+  z-index: 2;
+}
+
+.page p {
+  font-size: clamp(0.82rem, 1.4vw, 0.95rem);
+  line-height: 1.65;
+  margin-bottom: 0.7rem;
+  position: relative;
+  z-index: 2;
+}
+
+.page .kicker {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--rojo);
+  font-weight: 800;
+  margin-bottom: 0.3rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* ================== PORTADA ================== */
+.cover {
+  background: linear-gradient(135deg, var(--azul) 0%, var(--rojo-oscuro) 60%, var(--rojo) 100%);
+  color: var(--blanco);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  overflow: hidden;
+}
+
+.cover::before {
+  background-image: 
+    radial-gradient(circle at 30% 30%, rgba(244,196,48,0.15), transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(193,18,31,0.3), transparent 50%),
+    url('https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=1470&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+}
+
+.cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.5) 100%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.cover > * { position: relative; z-index: 3; }
+
+.cover .numero {
+  position: absolute;
+  top: 25px;
+  left: 35px;
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dorado);
+  font-weight: 700;
+}
+
+.cover h1 {
+  color: var(--blanco);
+  font-size: clamp(2.6rem, 8vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 0.95;
+  text-shadow: 0 6px 30px rgba(0,0,0,0.5);
+  margin-bottom: 1rem;
+}
+
+.cover .subtitulo {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(0.95rem, 2vw, 1.3rem);
+  color: var(--dorado);
+  margin-bottom: 1.8rem;
+  line-height: 1.4;
+  max-width: 500px;
+}
+
+.cover .badge {
+  display: inline-block;
+  border: 2px solid var(--dorado);
+  color: var(--dorado);
+  padding: 0.5rem 1.6rem;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.cover .fecha {
+  position: absolute;
+  bottom: 25px;
+  left: 35px;
+  right: 35px;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ================== ÍNDICE ================== */
+.toc {
+  background: linear-gradient(135deg, var(--azul) 0%, var(--rojo-oscuro) 100%);
+  color: var(--blanco);
+}
+
+.toc::before {
+  background:
+    radial-gradient(circle at 80% 20%, rgba(244,196,48,0.15), transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05), transparent 50%);
+}
+
+.toc h1 { color: var(--dorado); }
+.toc .kicker { color: var(--dorado); }
+.toc p { color: rgba(255,255,255,0.85); }
+
+.index-list {
+  list-style: none;
+  margin-top: 0.8rem;
+  position: relative;
+  z-index: 2;
+}
+
+.index-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.4rem;
+  border-bottom: 1px dashed rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  color: rgba(255,255,255,0.9);
+  font-size: 0.9rem;
+}
+
+.index-list li:hover {
+  color: var(--dorado);
+  padding-left: 12px;
+  border-bottom-color: var(--dorado);
+}
+
+.index-list li .num {
+  color: var(--dorado);
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.index-list li .pag {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+/* ================== CITA ================== */
+.quote {
+  background: linear-gradient(135deg, #fff8e7, #fdf6e3);
+  border-left: 4px solid var(--rojo);
+  padding: 0.8rem 1rem;
+  margin: 0.8rem 0;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  border-radius: 0 8px 8px 0;
+  position: relative;
+  z-index: 2;
+}
+
+.quote cite {
+  display: block;
+  margin-top: 0.35rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  color: var(--gris);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* ================== REGIONES ================== */
+.regions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 0.8rem 0;
+  position: relative;
+  z-index: 2;
+}
+
+.region-card {
+  border-radius: 12px;
+  padding: 1rem;
+  color: var(--blanco);
+  position: relative;
+  overflow: hidden;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  transition: transform 0.3s;
+}
+
+.region-card:hover { transform: translateY(-4px); }
+
+.region-card.costa { background: linear-gradient(135deg, #b8860b 0%, #d4a017 100%); }
+.region-card.sierra { background: linear-gradient(135deg, #2a6f4e 0%, #4a9c6e 100%); }
+.region-card.selva { background: linear-gradient(135deg, #0d5e3e 0%, #1a8a5a 100%); }
+
+.region-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.45) 100%);
+}
+
+.region-card > * { position: relative; z-index: 2; }
+
+.region-card h3 {
+  color: var(--blanco);
+  font-size: 1.15rem;
+  margin-bottom: 0.25rem;
+  font-weight: 800;
+}
+
+.region-card p {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.95);
+  margin: 0;
+}
+
+.region-card .tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(4px);
+  padding: 0.15rem 0.6rem;
+  border-radius: 50px;
+  font-size: 0.6rem;
+  margin-top: 0.4rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+  align-self: flex-start;
+}
+
+/* ================== TABS LENGUAS ================== */
+.lang-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+  position: relative;
+  z-index: 2;
+}
+
+.lang-tabs button {
+  padding: 0.4rem 1rem;
+  border: 2px solid var(--azul);
+  background: transparent;
+  color: var(--azul);
+  border-radius: 50px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-tabs button.activo,
+.lang-tabs button:hover {
+  background: var(--azul);
+  color: var(--blanco);
+}
+
+.lang-content {
+  display: none;
+  margin-top: 0.8rem;
+  padding: 0.9rem 1rem;
+  background: rgba(29,53,87,0.06);
+  border-left: 4px solid var(--azul);
+  border-radius: 0 10px 10px 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  position: relative;
+  z-index: 2;
+}
+
+.lang-content.activo {
+  display: block;
+  animation: fadeIn 0.4s ease;
+}
+
+.lang-content strong { color: var(--azul); }
+.lang-content ul { padding-left: 1.1rem; margin-top: 0.4rem; }
+.lang-content li { margin-bottom: 0.25rem; font-size: 0.82rem; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================== COSTUMBRES ================== */
+.costumbres-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 0.6rem;
+  position: relative;
+  z-index: 2;
+}
+
+.costumbre-item {
+  background: var(--blanco);
+  border-radius: 10px;
+  padding: 0.8rem;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+  border-top: 3px solid var(--rojo);
+}
+
+.costumbre-item h4 {
+  font-size: 0.85rem;
+  color: var(--rojo-oscuro);
+  margin-bottom: 0.25rem;
+  font-weight: 800;
+}
+
+.costumbre-item p {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #444;
+  margin: 0;
+}
+
+/* ================== ORGANIZACIÓN ================== */
+.org-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 0.8rem;
+  position: relative;
+  z-index: 2;
+}
+
+.org-card {
+  background: var(--blanco);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  border-top: 4px solid var(--azul);
+}
+
+.org-card h4 {
+  color: var(--rojo-oscuro);
+  font-size: 0.92rem;
+  margin-bottom: 0.35rem;
+  font-weight: 800;
+}
+
+.org-card p {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  margin: 0;
+  color: #444;
+}
+
+/* ================== ESTADÍSTICAS ================== */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0.8rem 0;
+  position: relative;
+  z-index: 2;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #fff, #fafafa);
+  border-radius: 10px;
+  padding: 0.9rem 0.5rem;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  border-top: 3px solid var(--rojo);
+}
+
+.stat-card .num {
+  font-family: 'Courier New', monospace;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--rojo);
+  line-height: 1;
+}
+
+.stat-card .label {
+  font-size: 0.66rem;
+  color: var(--gris);
+  line-height: 1.3;
+  margin-top: 0.35rem;
+}
+
+/* ================== QUIZ ================== */
+.quiz-box {
+  background: var(--blanco);
+  border-radius: 12px;
+  padding: 1.2rem;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+  margin-top: 0.8rem;
+  position: relative;
+  z-index: 2;
+}
+
+.quiz-question {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--azul);
+  margin-bottom: 0.8rem;
+  line-height: 1.4;
+}
+
+.quiz-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quiz-opts button {
+  padding: 0.7rem 1rem;
+  text-align: left;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition: all 0.25s;
+  font-weight: 500;
+}
+
+.quiz-opts button:hover:not(:disabled) {
+  border-color: var(--azul);
+  background: rgba(29,53,87,0.05);
+  transform: translateX(3px);
+}
+
+.quiz-opts button.correcta {
+  background: #d1fae5;
+  border-color: #10b981;
+  font-weight: 800;
+  color: #065f46;
+}
+
+.quiz-opts button.incorrecta {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.quiz-opts button:disabled { cursor: default; }
+
+.feedback {
+  margin-top: 0.8rem;
+  padding: 0.7rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  display: none;
+}
+
+.feedback.show { display: block; animation: fadeIn 0.4s; }
+.feedback.ok { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
+.feedback.err { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+
+/* ================== FUENTES ================== */
+.sources {
+  list-style: none;
+  padding: 0;
+  margin-top: 0.6rem;
+  position: relative;
+  z-index: 2;
+}
+
+.sources li {
+  background: var(--blanco);
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 0.4rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-left: 3px solid var(--azul);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.sources li strong { color: var(--rojo-oscuro); }
+.sources a { color: var(--azul); text-decoration: underline; word-break: break-all; }
+
+/* ================== CONTRAPORTADA ================== */
+.back-cover {
+  background: linear-gradient(135deg, var(--rojo-oscuro) 0%, var(--azul) 100%);
+  color: var(--blanco);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+
+.back-cover::before {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(244,196,48,0.12), transparent 60%);
+  opacity: 1;
+}
+
+.back-cover h2 {
+  color: var(--dorado);
+  font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+  margin-bottom: 1rem;
+}
+
+.back-cover p {
+  max-width: 500px;
+  color: rgba(255,255,255,0.9);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Créditos finales en contraportada */
+.back-cover .creditos {
+  margin-top: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.back-cover .creditos strong {
+  color: var(--dorado);
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.back-cover .creditos span {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  display: block;
+  color: rgba(255,255,255,0.95);
+}
+
+.back-cover .firma {
+  margin-top: 2rem;
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dorado);
+  opacity: 0.8;
+}
+
+.back-cover .btn-restart {
+  background: var(--dorado);
+  color: var(--rojo-oscuro);
+  border: none;
+  padding: 0.8rem 1.8rem;
+  border-radius: 50px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 1.5rem;
+  letter-spacing: 1px;
+}
+
+.back-cover .btn-restart:hover {
+  background: var(--blanco);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* ================== NAV INFERIOR ================== */
+.nav {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15,10,8,0.85);
+  backdrop-filter: blur(12px);
+  padding: 8px 18px;
+  border-radius: 50px;
+  border: 1px solid rgba(255,255,255,0.15);
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+
+.nav button {
+  background: none;
+  border: none;
+  color: var(--blanco);
+  font-size: 1.6rem;
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+  font-family: serif;
+  line-height: 1;
+}
+
+.nav button:hover:not(:disabled) {
+  background: var(--rojo);
+  transform: scale(1.1);
+}
+
+.nav button:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.nav .indicador {
+  color: var(--dorado);
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-width: 65px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+/* ================== RESPONSIVE ================== */
+@media (max-width: 768px) {
+  .page {
+    width: 96vw;
+    height: 92vh;
+    height: 92dvh;
+    padding: 22px 20px 40px;
+    border-radius: 4px;
+  }
+
+  .page::after { width: 15px; }
+  .page h1 { font-size: 1.5rem; }
+  .page h2 { font-size: 1.15rem; }
+  .page p { font-size: 0.8rem; line-height: 1.55; }
+
+  .regions-grid { grid-template-columns: 1fr; gap: 8px; }
+  .region-card { min-height: 90px; padding: 0.7rem; }
+  .region-card h3 { font-size: 0.95rem; }
+  .region-card p { font-size: 0.7rem; }
+
+  .org-grid { grid-template-columns: 1fr; }
+  .costumbres-grid { grid-template-columns: 1fr; }
+
+  .stats { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stat-card { padding: 0.6rem 0.3rem; }
+  .stat-card .num { font-size: 1.2rem; }
+  .stat-card .label { font-size: 0.55rem; }
+
+  .nav { bottom: 10px; padding: 6px 12px; gap: 8px; }
+  .nav button { font-size: 1.3rem; width: 36px; height: 36px; }
+  .nav .indicador { font-size: 0.7rem; min-width: 55px; }
+
+  .hint { font-size: 0.6rem; padding: 6px 14px; top: 10px; }
+
+  .cover h1 { font-size: 2.5rem; }
+  .cover .subtitulo { font-size: 0.85rem; }
+
+  .index-list li { padding: 0.4rem 0.2rem; font-size: 0.78rem; }
+  .index-list li .pag { display: none; }
+
+  .lang-tabs button { font-size: 0.68rem; padding: 0.3rem 0.7rem; }
+  .lang-content { font-size: 0.78rem; padding: 0.7rem 0.8rem; }
+
+  .quote { font-size: 0.78rem; padding: 0.65rem 0.85rem; }
+  .sources li { font-size: 0.68rem; padding: 0.5rem 0.7rem; }
+  
+  .back-cover .creditos span { font-size: 0.75rem; }
+}
+
+@media (max-height: 640px) {
+  .page { padding: 18px 20px 35px; }
+  .page h1 { font-size: 1.3rem; margin-bottom: 0.4rem; }
+  .page p { font-size: 0.75rem; line-height: 1.45; margin-bottom: 0.5rem; }
+  .quote { padding: 0.6rem 0.8rem; font-size: 0.75rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Barra de progreso -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Pista inicial -->
+<div class="hint" id="hint">Desliza · Toca · Flechas ← → para navegar</div>
+
+<!-- Revista -->
+<div class="magazine">
+  <div class="page-container" id="pageContainer">
+
+    <!-- ============ PÁGINA 1 · PORTADA ============ -->
+    <div class="page cover" data-page="1">
+      <span class="numero">Edición N° 01 · 2026</span>
+      <h1>PERÚ<br>PLURAL</h1>
+      <p class="subtitulo">Revista digital sobre los estilos de vida, la geografía y la diversidad cultural del Perú</p>
+      <span class="badge">Costa · Sierra · Selva</span>
+      <span class="fecha">Universidad Privada San Juan Bautista</span>
+    </div>
+
+    <!-- ============ PÁGINA 2 · PRESENTACIÓN (NUEVA) ============ -->
+    <div class="page" data-page="2">
+      <span class="kicker">Editorial</span>
+      <h1>Bienvenidos a un país de mil formas de vivir</h1>
+      <p>Esta revista nace de una pregunta sencilla pero poderosa: ¿cómo la geografía del Perú —sus desiertos, montañas y selvas— ha moldeado las lenguas, costumbres y formas de organización de su gente?</p>
+      <p>A través de estas páginas, exploraremos la riqueza de nuestras tres regiones naturales y asumiremos una postura crítica frente a las brechas históricas que aún persisten, sustentando todo en fuentes oficiales y académicas.</p>
+      
+      <div class="quote" style="margin-top: 1.5rem; border-left-color: var(--dorado);">
+        <strong style="color: var(--rojo-oscuro); font-size: 1.1rem; font-family: 'Inter', sans-serif; font-style: normal;">Equipo de Redacción</strong>
+        <ul style="list-style-type: none; padding-left: 0; margin-top: 0.8rem; font-family: 'Inter', sans-serif; font-style: normal; font-size: 0.85rem; line-height: 1.8; color: #333;">
+          <li>• Angely Nicolé Sánchez Sánchez</li>
+          <li>• Armando Alejandro Valenzuela Martínez</li>
+          <li>• Julia Grace Vélez Zevallos</li>
+          <li>• Laura Nicoll Cruzado García</li>
+          <li>• Treisy Xiomara Palomino Salas</li>
+        </ul>
+        <cite style="margin-top: 0.8rem;">— Universidad Privada San Juan Bautista (UPSJB)</cite>
+      </div>
+      <span class="page-num">02</span>
+    </div>
+
+    <!-- ============ PÁGINA 3 · ÍNDICE ============ -->
+    <div class="page toc" data-page="3">
+      <span class="kicker">Contenido</span>
+      <h1>Índice</h1>
+      <p style="margin-bottom:0.8rem;">Un recorrido por las tres regiones naturales del país, sus lenguas, sus costumbres y las formas de organización social que nacen del territorio. Toca cualquier título para ir directo.</p>
+      <ul class="index-list">
+        <li data-goto="4"><span>01 · Un país, muchas formas de vivir</span><span class="pag">P.4</span></li>
+        <li data-goto="5"><span>02 · Las tres regiones naturales</span><span class="pag">P.5</span></li>
+        <li data-goto="6"><span>03 · La lengua como espejo del territorio</span><span class="pag">P.6</span></li>
+        <li data-goto="7"><span>04 · Costumbres que nacen del paisaje</span><span class="pag">P.7</span></li>
+        <li data-goto="8"><span>05 · Organización social andina y amazónica</span><span class="pag">P.8</span></li>
+        <li data-goto="9"><span>06 · Mirada crítica: brechas y desigualdad</span><span class="pag">P.9</span></li>
+        <li data-goto="10"><span>07 · Quiz interactivo</span><span class="pag">P.10</span></li>
+        <li data-goto="11"><span>08 · Fuentes confiables</span><span class="pag">P.11</span></li>
+      </ul>
+      <span class="page-num">03</span>
+    </div>
+
+    <!-- ============ PÁGINA 4 · INTRODUCCIÓN ============ -->
+    <div class="page" data-page="4">
+      <span class="kicker">Introducción</span>
+      <h1>Un país, muchas formas de vivir</h1>
+      <p>El Perú es un territorio de contrastes extremos: desiertos costeros, montañas andinas y selvas amazónicas. Esta diversidad geográfica no solo configura el paisaje, sino que ha moldeado históricamente las lenguas, las costumbres y las formas de organización social de sus habitantes.</p>
+      <div class="quote">
+        “El medio geográfico y la economía han determinado las diferencias de costumbres que hay no sólo entre los habitantes de las tres regiones naturales —costa, sierra y selva— sino aun las que se caracterizan entre poblaciones que no están muy alejadas unas de otras.”
+        <cite>— Revista Cultura y Pueblo, Comisión Nacional de Cultura (1964)</cite>
+      </div>
+      <p>Reconocer esta pluralidad es fundamental para construir una sociedad más justa e intercultural. Sin embargo, también implica asumir una postura crítica frente a las desigualdades históricas que han marginado a los pueblos indígenas y afroperuanos, y frente a los procesos de homogeneización cultural que aún persisten.</p>
+      <p>En las páginas siguientes exploraremos cómo la geografía moldea tres dimensiones esenciales de la vida peruana: <strong>la lengua, las costumbres y la organización social</strong>.</p>
+      <span class="page-num">04</span>
+    </div>
+
+    <!-- ============ PÁGINA 5 · REGIONES ============ -->
+    <div class="page" data-page="5">
+      <span class="kicker">Geografía</span>
+      <h1>Las tres regiones naturales</h1>
+      <p>Costa, sierra y selva no son solo categorías geográficas: son escenarios de vida con lógicas propias de habitar el territorio.</p>
+
+      <div class="regions-grid">
+        <div class="region-card costa">
+          <h3>Costa</h3>
+          <p>Franja desértica y urbana. La vida gira en torno al mar, la agricultura de exportación y las grandes ciudades. Aquí se concentra la mayor parte de la población y los centros políticos y económicos.</p>
+          <span class="tag">Marinera · Afroperú</span>
+        </div>
+        <div class="region-card sierra">
+          <h3>Sierra</h3>
+          <p>El corazón andino. La altitud impone ritmos basados en la agricultura de pisos ecológicos, el pastoreo y la reciprocidad comunal. El quechua y el aimara son lenguas vivas que resisten.</p>
+          <span class="tag">Ayllu · Quechua</span>
+        </div>
+        <div class="region-card selva">
+          <h3>Selva</h3>
+          <p>La Amazonía, hogar de 55 pueblos indígenas. La vida se organiza en torno a los ríos, la pesca, la caza y la agricultura itinerante. Aquí se habla la mayor diversidad de lenguas del país.</p>
+          <span class="tag">43 lenguas · Ríos</span>
+        </div>
+      </div>
+
+      <div class="quote">
+        <strong>Dato clave:</strong> En el Perú se hablan <strong>48 lenguas originarias</strong>: 4 andinas (quechua, aimara, cauqui y jaqaru) y 44 amazónicas. De ellas, 18 están en serio peligro de desaparecer.
+        <cite>— Ministerio de Cultura del Perú</cite>
+      </div>
+      <span class="page-num">05</span>
+    </div>
+
+    <!-- ============ PÁGINA 6 · LENGUAS ============ -->
+    <div class="page" data-page="6">
+      <span class="kicker">Lengua</span>
+      <h1>La lengua como espejo del territorio</h1>
+      <p>La geografía no solo separa montañas y ríos; también crea fronteras lingüísticas. Explora cada lengua tocando las pestañas:</p>
+
+      <div class="lang-tabs">
+        <button class="activo" data-tab="tab-quechua">Quechua</button>
+        <button data-tab="tab-aimara">Aimara</button>
+        <button data-tab="tab-amazonia">Amazónicas</button>
+        <button data-tab="tab-castellano">Castellano</button>
+      </div>
+
+      <div class="lang-content activo" id="tab-quechua">
+        <strong>Quechua: la lengua de los Andes</strong>
+        <p>Con más de <strong>3.3 millones de hablantes</strong>, es la lengua originaria más hablada del país. Se concentra en Apurímac, Ayacucho, Cusco, Huancavelica y Puno.</p>
+        <ul>
+          <li>Lengua oficial en las zonas donde predomina.</li>
+          <li>Transmite saberes agrícolas y medicinales.</li>
+          <li>Enfrenta aún brechas educativas y discriminación.</li>
+        </ul>
+      </div>
+
+      <div class="lang-content" id="tab-aimara">
+        <strong>Aimara: resistencia en el altiplano</strong>
+        <p>Hablada principalmente en Puno, alrededor del lago Titicaca. Es la segunda lengua andina más importante, con más de <strong>440 000 hablantes</strong>.</p>
+        <ul>
+          <li>Fuerte tradición oral y textiles simbólicos.</li>
+          <li>Organización social basada en el ayllu y la reciprocidad.</li>
+        </ul>
+      </div>
+
+      <div class="lang-content" id="tab-amazonia">
+        <strong>Amazonía: un mosaico de 43 lenguas</strong>
+        <p>La selva peruana alberga <strong>43 lenguas originarias</strong> de 17 familias lingüísticas. Loreto es el departamento con mayor diversidad (20 lenguas).</p>
+        <ul>
+          <li>Asháninka, awajún y shipibo-konibo son las más numerosas.</li>
+          <li>Cada lengua encapsula un conocimiento profundo de la biodiversidad.</li>
+        </ul>
+      </div>
+
+      <div class="lang-content" id="tab-castellano">
+        <strong>Castellano: lengua de encuentro y desigualdad</strong>
+        <p>Es la lengua materna del <strong>82.8 %</strong> de los peruanos. Su expansión histórica ha estado ligada a la urbanización y a la educación formal.</p>
+        <ul>
+          <li>El 13.6 % de hispanohablantes tiene educación superior completa, frente al 5.2 % de quechuahablantes.</li>
+          <li>La interculturalidad crítica propone un diálogo horizontal entre lenguas.</li>
+        </ul>
+      </div>
+      <span class="page-num">06</span>
+    </div>
+
+    <!-- ============ PÁGINA 7 · COSTUMBRES ============ -->
+    <div class="page" data-page="7">
+      <span class="kicker">Costumbres</span>
+      <h1>Costumbres que nacen del paisaje</h1>
+      <p>Las festividades, la gastronomía y las prácticas cotidianas están íntimamente ligadas al entorno. No se puede entender el Inti Raymi sin los Andes, ni el carnaval amazónico sin los ríos.</p>
+
+      <div class="costumbres-grid">
+        <div class="costumbre-item">
+          <h4>Inti Raymi (Cusco)</h4>
+          <p>Fiesta del sol andino que marca el solsticio de junio. Moviliza redes de reciprocidad y reafirma la identidad quechua.</p>
+        </div>
+        <div class="costumbre-item">
+          <h4>Marinera (Costa)</h4>
+          <p>Baile nacional de la costa peruana. Fusiona raíces africanas, andinas y europeas en el ritmo del mestizaje.</p>
+        </div>
+        <div class="costumbre-item">
+          <h4>Danzas amazónicas</h4>
+          <p>Cada pueblo indígena tiene danzas propias ligadas a la caza, la pesca y la siembra. Rituales que agradecen al bosque.</p>
+        </div>
+        <div class="costumbre-item">
+          <h4>Gastronomía regional</h4>
+          <p>Del ceviche costeño a la pachamanca andina y el juane amazónico: la cocina es un mapa del territorio.</p>
+        </div>
+      </div>
+
+      <div class="quote" style="margin-top:0.8rem;">
+        <strong>La fiesta como organización social:</strong> las celebraciones religiosas y los rituales agrícolas no son solo actos simbólicos; movilizan redes de reciprocidad, reafirman la identidad comunal y reproducen conocimientos sobre el clima y los ciclos productivos.
+        <cite>— Cultura y Pueblo (1964) / Ministerio de Cultura</cite>
+      </div>
+      <span class="page-num">07</span>
+    </div>
+
+    <!-- ============ PÁGINA 8 · ORGANIZACIÓN SOCIAL ============ -->
+    <div class="page" data-page="8">
+      <span class="kicker">Organización</span>
+      <h1>Formas de organizarse y habitar</h1>
+      <p>La geografía también ha incidido en cómo las sociedades se organizan para producir, gobernar y cuidar el territorio.</p>
+
+      <div class="org-grid">
+        <div class="org-card">
+          <h4>El ayllu andino</h4>
+          <p>Unidad social basada en el parentesco, la reciprocidad y la propiedad comunal de la tierra. La asamblea comunal y los cargos rotativos son sus mecanismos de gobierno.</p>
+        </div>
+        <div class="org-card">
+          <h4>Comunidades nativas amazónicas</h4>
+          <p>Conjuntos de familias vinculadas por parentesco que comparten territorio y se rigen por asambleas. Han creado organizaciones supracomunales para defender sus derechos.</p>
+        </div>
+        <div class="org-card">
+          <h4>Retos actuales</h4>
+          <p>La organización comunal se ha debilitado por la presión extractiva y los conflictos socioambientales. Pero muchas comunidades resisten y se articulan con el mercado sin renunciar a su autogobierno.</p>
+        </div>
+      </div>
+
+      <div class="quote" style="margin-top:0.8rem;">
+        <strong>Reflexión:</strong> el ayllu y la comunidad nativa no son formas “atrasadas” de organización: son sistemas complejos de gestión del territorio y de la vida colectiva que han demostrado sostenibilidad durante siglos.
+        <cite>— Repositorio UNAP / Ley de Comunidades Nativas</cite>
+      </div>
+      <span class="page-num">08</span>
+    </div>
+
+    <!-- ============ PÁGINA 9 · MIRADA CRÍTICA ============ -->
+    <div class="page" data-page="9">
+      <span class="kicker">Mirada crítica</span>
+      <h1>La pluralidad no es aún igualdad</h1>
+      <p>Valorar la diversidad exige reconocer las brechas históricas que la atraviesan. La riqueza cultural del Perú convive con profundas desigualdades.</p>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="num">26.8%</div>
+          <div class="label">Se autoidentifica como indígena o afroperuano (Censo 2025)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">5.2%</div>
+          <div class="label">Quechuahablantes con educación superior (vs. 13.6% hispanohablantes)</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">18</div>
+          <div class="label">Lenguas originarias en serio peligro de extinción</div>
+        </div>
+      </div>
+
+      <div class="org-grid" style="margin-top:0.6rem;">
+        <div class="org-card" style="border-top-color:var(--rojo);">
+          <h4>Exclusión estructural</h4>
+          <p>La CIDH y el PNUD señalan que los pueblos indígenas y afroperuanos enfrentan exclusión estructural que se refleja en el acceso desigual a derechos.</p>
+        </div>
+        <div class="org-card" style="border-top-color:var(--rojo);">
+          <h4>Centralismo y extractivismo</h4>
+          <p>El Estado peruano ha sido históricamente centralista, dejando a amplios territorios amazónicos y andinos sin servicios públicos ni capacidad de decisión sobre sus recursos.</p>
+        </div>
+        <div class="org-card" style="border-top-color:var(--rojo);">
+          <h4>Discriminación lingüística</h4>
+          <p>Hablar una lengua originaria sigue siendo motivo de discriminación en espacios urbanos y educativos, acelerando la pérdida de patrimonio lingüístico.</p>
+        </div>
+      </div>
+
+      <div class="quote" style="margin-top:0.8rem;">
+        <strong>Reflexión final:</strong> “Reconocer los derechos no basta si el sistema no garantiza las condiciones para ejercerlos.”
+        <cite>— Lía Zevallos, Ashanti Perú / PNUD</cite>
+      </div>
+      <span class="page-num">09</span>
+    </div>
+
+    <!-- ============ PÁGINA 10 · QUIZ ============ -->
+    <div class="page" data-page="10">
+      <span class="kicker">Interactivo</span>
+      <h1>Pon a prueba tu mirada crítica</h1>
+      <p>Responde la pregunta y descubre cuánto has interiorizado sobre la relación entre geografía, cultura y desigualdad en el Perú.</p>
+
+      <div class="quiz-box">
+        <div class="quiz-question" id="quizQuestion">
+          ¿Cuál es la lengua originaria con mayor número de hablantes en el Perú?
+        </div>
+        <div class="quiz-opts" id="quizOpts"></div>
+        <div class="feedback" id="quizFeedback"></div>
+      </div>
+
+      <div class="quote" style="margin-top:0.9rem;">
+        El quechua, con más de 3.3 millones de hablantes, es la lengua originaria más vital del país. Le sigue el aimara con alrededor de 440 000 hablantes.
+        <cite>— Congreso de la República / Ministerio de Cultura</cite>
+      </div>
+      <span class="page-num">10</span>
+    </div>
+
+    <!-- ============ PÁGINA 11 · FUENTES ============ -->
+    <div class="page" data-page="11">
+      <span class="kicker">Referencias</span>
+      <h1>Fuentes confiables</h1>
+      <p>Esta revista se sustenta en materiales bibliográficos y webgráficos de instituciones oficiales, académicas y organismos internacionales.</p>
+
+      <ul class="sources">
+        <li><strong>Congreso de la República del Perú.</strong> <em>Diagnóstico del estado general de los pueblos originarios.</em> <a href="https://www2.congreso.gob.pe/sicr/cendocbib/con5_uibd.nsf/4EFF2815D9C2C1BA05258271006D8F35/$FILE/Diagnostico_estado_general.pdf" target="_blank" rel="noopener">congreso.gob.pe</a></li>
+        <li><strong>Ministerio de Cultura del Perú.</strong> <em>Cultura y Pueblo</em> (revista de la Comisión Nacional de Cultura, 1964). <a href="https://repositorio.cultura.gob.pe" target="_blank" rel="noopener">repositorio.cultura.gob.pe</a></li>
+        <li><strong>Ministerio de Educación.</strong> <em>Territorio y cultura.</em> <a href="http://repositorio.minedu.gob.pe" target="_blank" rel="noopener">repositorio.minedu.gob.pe</a></li>
+        <li><strong>PNUD Perú.</strong> (2025). <em>Informe Nacional sobre Desarrollo Humano.</em> <a href="https://www.undp.org/es/peru" target="_blank" rel="noopener">undp.org/es/peru</a></li>
+        <li><strong>INEI / El Peruano.</strong> (2026). <em>Cerca de 9 millones de peruanos se identifican como indígenas o afroperuanos.</em> <a href="https://elperuano.pe" target="_blank" rel="noopener">elperuano.pe</a></li>
+        <li><strong>Defensoría del Pueblo.</strong> (2026). <em>Día Internacional de los Pueblos Indígenas.</em> <a href="https://www.defensoria.gob.pe" target="_blank" rel="noopener">defensoria.gob.pe</a></li>
+        <li><strong>Repositorio UNAP.</strong> <em>Organización social andina y amazónica.</em> <a href="https://www.repositorio.unap.edu.pe" target="_blank" rel="noopener">repositorio.unap.edu.pe</a></li>
+        <li><strong>OEA · SIMORE.</strong> (2024). <em>Recomendaciones sobre derechos de pueblos indígenas.</em> <a href="https://www.oas.org" target="_blank" rel="noopener">oas.org</a></li>
+      </ul>
+      <span class="page-num">11</span>
+    </div>
+
+    <!-- ============ PÁGINA 12 · CONTRAPORTADA ============ -->
+    <div class="page back-cover" data-page="12">
+      <h2>Gracias por leer</h2>
+      <p><strong>Perú Plural</strong> es una revista digital educativa sobre la diversidad geográfica, lingüística y cultural del país, elaborada con fines de reflexión crítica.</p>
+      <p>Todas las fuentes citadas son de acceso público y pertenecen a instituciones oficiales, académicas y organismos internacionales.</p>
+      
+      <div class="creditos">
+        <strong>Universidad Privada San Juan Bautista</strong>
+        <span>
+          Angely Nicolé Sánchez Sánchez<br>
+          Armando Alejandro Valenzuela Martínez<br>
+          Julia Grace Vélez Zevallos<br>
+          Laura Nicoll Cruzado García<br>
+          Treisy Xiomara Palomino Salas
+        </span>
+      </div>
+
+      <button class="btn-restart" id="btnRestart">↺ Volver al inicio</button>
+      <span class="firma">© 2026 · Perú Plural</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- Nav inferior -->
+<nav class="nav" id="nav">
+  <button id="btnPrev" aria-label="Anterior">‹</button>
+  <span class="indicador" id="indicador">1 / 12</span>
+  <button id="btnNext" aria-label="Siguiente">›</button>
+</nav>
+
+<script>
+/* ============================================================
+   REVISTA DIGITAL "PERÚ PLURAL" — Navegación con efecto flip
+   ============================================================ */
+
+const pages = Array.from(document.querySelectorAll('.page'));
+const total = pages.length;
+let current = 0;
+
+const indicador = document.getElementById('indicador');
+const progressBar = document.getElementById('progressBar');
+const btnPrev = document.getElementById('btnPrev');
+const btnNext = document.getElementById('btnNext');
+const hint = document.getElementById('hint');
+
+/* ---------- Actualizar estados de las páginas ---------- */
+function updatePages() {
+  pages.forEach((page, i) => {
+    page.classList.remove('current', 'past', 'future');
+    if (i < current) page.classList.add('past');
+    else if (i > current) page.classList.add('future');
+    else page.classList.add('current');
+
+    // Poner el scroll arriba al cambiar de página
+    if (i === current) page.scrollTop = 0;
+  });
+
+  indicador.textContent = `${current + 1} / ${total}`;
+  progressBar.style.width = `${((current + 1) / total) * 100}%`;
+  btnPrev.disabled = current === 0;
+  btnNext.disabled = current === total - 1;
+}
+
+/* ---------- Ir a una página específica ---------- */
+function goTo(index) {
+  if (index < 0 || index >= total || index === current) return;
+  current = index;
+  updatePages();
+  hideHint();
+}
+
+function nextPage() { goTo(current + 1); }
+function prevPage() { goTo(current - 1); }
+
+/* ---------- Hint ---------- */
+function hideHint() {
+  if (hint) hint.style.opacity = '0';
+}
+
+/* ---------- Botones inferiores ---------- */
+btnPrev.addEventListener('click', prevPage);
+btnNext.addEventListener('click', nextPage);
+
+/* ---------- Clic en cualquier parte de la página ----------
+   Regla: clic en el 75% derecho → siguiente
+          clic en el 25% izquierdo → anterior
+   Se ignora si el clic va dirigido a un elemento interactivo. */
+function handlePageClick(e) {
+  // Si el clic es sobre un elemento interactivo, no navegar
+  if (e.target.closest('button, a, input, textarea, select, [data-goto], .lang-tabs, .quiz-opts, .quiz-box, .index-list, .btn-restart')) {
+    return;
+  }
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const pct = x / rect.width;
+
+  if (pct > 0.25) nextPage();
+  else prevPage();
+}
+
+pages.forEach(p => {
+  // Solo navegar en la página actual
+  p.addEventListener('click', (e) => {
+    if (!p.classList.contains('current')) return;
+    handlePageClick(e);
+  });
+});
+
+/* ---------- Teclado ---------- */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+    e.preventDefault();
+    nextPage();
+  } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+    e.preventDefault();
+    prevPage();
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    goTo(0);
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    goTo(total - 1);
+  }
+});
+
+/* ---------- Swipe táctil ---------- */
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 1) return;
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  touchStartTime = Date.now();
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+  if (e.changedTouches.length !== 1) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  const dt = Date.now() - touchStartTime;
+
+  // Es swipe horizontal claro
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 600) {
+    if (dx < 0) nextPage();
+    else prevPage();
+    hideHint();
+  }
+}, { passive: true });
+
+/* ---------- Índice: ir a páginas ---------- */
+document.querySelectorAll('[data-goto]').forEach(el => {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const target = parseInt(el.dataset.goto, 10) - 1;
+    if (!isNaN(target)) goTo(target);
+  });
+});
+
+/* ---------- Tabs de lenguas ---------- */
+document.querySelectorAll('.lang-tabs').forEach(tabGroup => {
+  const buttons = tabGroup.querySelectorAll('button');
+  const page = tabGroup.closest('.page');
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      buttons.forEach(b => b.classList.remove('activo'));
+      btn.classList.add('activo');
+
+      const targetId = btn.dataset.tab;
+      page.querySelectorAll('.lang-content').forEach(c => c.classList.remove('activo'));
+      const panel = page.querySelector('#' + targetId);
+      if (panel) panel.classList.add('activo');
+    });
+  });
+});
+
+/* ---------- Quiz ---------- */
+const quizData = {
+  question: '¿Cuál es la lengua originaria con mayor número de hablantes en el Perú?',
+  options: ['Aimara', 'Quechua', 'Asháninka', 'Shipibo-Konibo'],
+  correct: 1,
+  explanation: 'El quechua tiene más de 3.3 millones de hablantes, seguido del aimara con 440 000. Es la lengua originaria más vital del país (Congreso de la República / Ministerio de Cultura).'
+};
+
+function initQuiz() {
+  const optsBox = document.getElementById('quizOpts');
+  const feedback = document.getElementById('quizFeedback');
+  if (!optsBox || !feedback) return;
+
+  optsBox.innerHTML = '';
+
+  quizData.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = opt;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Desactivar todos
+      optsBox.querySelectorAll('button').forEach(b => {
+        b.disabled = true;
+        b.style.cursor = 'default';
+      });
+
+      if (i === quizData.correct) {
+        btn.classList.add('correcta');
+        feedback.className = 'feedback show ok';
+        feedback.innerHTML = '✅ <strong>¡Correcto!</strong> ' + quizData.explanation;
+      } else {
+        btn.classList.add('incorrecta');
+        optsBox.children[quizData.correct].classList.add('correcta');
+        feedback.className = 'feedback show err';
+        feedback.innerHTML = `❌ <strong>Incorrecto.</strong> La respuesta correcta es <strong>${quizData.options[quizData.correct]}</strong>. ${quizData.explanation}`;
+      }
+    });
+    optsBox.appendChild(btn);
+  });
+}
+
+/* ---------- Botón reiniciar ---------- */
+const btnRestart = document.getElementById('btnRestart');
+if (btnRestart) {
+  btnRestart.addEventListener('click', (e) => {
+    e.stopPropagation();
+    goTo(0);
+    // Reiniciar quiz
+    setTimeout(() => {
+      initQuiz();
+      document.getElementById('quizFeedback').className = 'feedback';
+      document.getElementById('quizFeedback').innerHTML = '';
+    }, 500);
+  });
+}
+
+/* ---------- INICIALIZACIÓN ---------- */
+updatePages();
+initQuiz();
+
+// Ocultar pista automáticamente después de 8s
+setTimeout(hideHint, 8000);
+</script>
+</body>
+</html>
